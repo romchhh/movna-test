@@ -21,7 +21,7 @@ interface QuizSection {
   questions: Question[];
 }
 
-// Правильні відповіді (ти можеш їх змінити на правильні)
+// Правильні відповіді
 const correctAnswers: Record<number, string> = {
   1: 'mind-ear',
   2: 'speak-up-message',
@@ -271,19 +271,49 @@ const quizSections: QuizSection[] = [
   }
 ];
 
-export default function QuizSection() {
+interface QuizSectionProps {
+  isFormValid?: boolean;
+}
+
+export default function QuizSection({ isFormValid = true }: QuizSectionProps) {
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [highlightedQuestion, setHighlightedQuestion] = useState<number | null>(null);
+  const [showFormMessage, setShowFormMessage] = useState(false);
 
   const handleAnswerChange = (questionId: number, value: string) => {
+    // Якщо форма не заповнена, показуємо повідомлення та прокручуємо до форми
+    if (isFormValid === false) {
+      setShowFormMessage(true);
+      setTimeout(() => {
+        const formSection = document.getElementById('contact-form-section');
+        if (formSection) {
+          formSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Підсвічуємо форму
+          formSection.style.transition = 'all 0.3s ease';
+          formSection.style.transform = 'scale(1.02)';
+          setTimeout(() => {
+            formSection.style.transform = 'scale(1)';
+          }, 300);
+        }
+      }, 100);
+      
+      // Ховаємо повідомлення через 4 секунди
+      setTimeout(() => {
+        setShowFormMessage(false);
+      }, 4000);
+      return;
+    }
+
     setAnswers(prev => ({
       ...prev,
       [questionId]: value
     }));
-    // Прибираємо підсвічування, коли користувач відповідає на питання
     if (highlightedQuestion === questionId) {
       setHighlightedQuestion(null);
+    }
+    if (showFormMessage) {
+      setShowFormMessage(false);
     }
   };
 
@@ -312,19 +342,15 @@ export default function QuizSection() {
     const allQuestionIds = getAllQuestionIds();
     const answeredQuestionIds = Object.keys(answers).map(id => parseInt(id, 10));
     
-    // Знаходимо перше невідповідане питання
     const firstUnansweredId = allQuestionIds.find(id => !answeredQuestionIds.includes(id));
     
     if (firstUnansweredId !== undefined) {
-      // Підсвічуємо питання
       setHighlightedQuestion(firstUnansweredId);
       
-      // Прокручуємо до питання
       setTimeout(() => {
         const questionElement = document.getElementById(`question-${firstUnansweredId}`);
         if (questionElement) {
           questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Додаємо візуальний ефект
           questionElement.style.transition = 'all 0.3s ease';
         }
       }, 100);
@@ -332,11 +358,7 @@ export default function QuizSection() {
     }
 
     const finalScore = calculateScore();
-    
-    // Зберігаємо score в sessionStorage
     sessionStorage.setItem('quizScore', finalScore.toString());
-    
-    // Перенаправляємо на сторінку результатів
     router.push(`/results?score=${finalScore}`);
   };
 
@@ -371,57 +393,134 @@ export default function QuizSection() {
           <strong>{question.id}.</strong> {question.text}
         </p>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-option)' }}>
-        {question.options.map((option, idx) => (
-          <label 
-            key={idx} 
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer',
-              fontFamily: 'Craftwork Grotesk, sans-serif',
-              fontSize: 'var(--question-size)',
-              color: isHighlighted ? '#D32F2F' : '#0E4486'
-            }}
-            onClick={() => handleAnswerChange(question.id, option.value)}
-          >
-            <div style={{
-              width: 'var(--radio-size)',
-              height: 'var(--radio-size)',
-              borderRadius: '50%',
-              border: `2px solid ${isHighlighted ? '#F44336' : '#0E4486'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: answers[question.id] === option.value ? (isHighlighted ? '#F44336' : '#0E4486') : 'transparent',
-              transition: 'all 0.2s',
-              flexShrink: 0
-            }}>
-              {answers[question.id] === option.value && (
-                <div style={{
-                  width: 'var(--radio-inner)',
-                  height: 'var(--radio-inner)',
-                  borderRadius: '50%',
-                  background: '#FFFFFF'
-                }} />
-              )}
-            </div>
-            {option.label}
-          </label>
-        ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-option)' }}>
+          {question.options.map((option, idx) => (
+            <label 
+              key={idx} 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                fontFamily: 'Craftwork Grotesk, sans-serif',
+                fontSize: 'var(--question-size)',
+                color: isHighlighted ? '#D32F2F' : '#0E4486'
+              }}
+              onClick={() => handleAnswerChange(question.id, option.value)}
+            >
+              <div style={{
+                width: 'var(--radio-size)',
+                height: 'var(--radio-size)',
+                borderRadius: '50%',
+                border: `2px solid ${isHighlighted ? '#F44336' : '#0E4486'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: answers[question.id] === option.value ? (isHighlighted ? '#F44336' : '#0E4486') : 'transparent',
+                transition: 'all 0.2s',
+                flexShrink: 0
+              }}>
+                {answers[question.id] === option.value && (
+                  <div style={{
+                    width: 'var(--radio-inner)',
+                    height: 'var(--radio-inner)',
+                    borderRadius: '50%',
+                    background: '#FFFFFF'
+                  }} />
+                )}
+              </div>
+              {option.label}
+            </label>
+          ))}
+        </div>
       </div>
-    </div>
     );
   };
 
+  const totalQuestions = getAllQuestionIds().length;
+  const answeredQuestions = Object.keys(answers).length;
+  const progressPercentage = (answeredQuestions / totalQuestions) * 100;
+
   return (
     <>
+      {/* Form Message Alert */}
+      {showFormMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#F44336',
+          color: '#FFFFFF',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          fontFamily: 'Craftwork Grotesk, sans-serif',
+          fontSize: '16px',
+          fontWeight: 600,
+          zIndex: 1002,
+          boxShadow: '0 4px 20px rgba(244, 67, 54, 0.4)',
+          animation: 'slideDown 0.3s ease-out',
+          maxWidth: '90%',
+          textAlign: 'center'
+        }}>
+          Спочатку заповніть форму!
+        </div>
+      )}
+
+      {/* Progress Bar */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '6px',
+        background: 'rgba(14, 68, 134, 0.1)',
+        zIndex: 1000,
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          height: '100%',
+          background: 'linear-gradient(90deg, #0E4486 0%, #167DAB 100%)',
+          width: `${progressPercentage}%`,
+          transition: 'width 0.3s ease',
+          boxShadow: progressPercentage > 0 ? '0 0 10px rgba(14, 68, 134, 0.5)' : 'none'
+        }} />
+      </div>
+
+      {/* Progress Counter */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        background: '#0E4486',
+        color: '#FFFFFF',
+        padding: '8px 16px',
+        borderRadius: '20px',
+        fontFamily: 'Craftwork Grotesk, sans-serif',
+        fontSize: '14px',
+        fontWeight: 600,
+        zIndex: 1001,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        transition: 'all 0.3s ease'
+      }}>
+        {answeredQuestions} / {totalQuestions}
+      </div>
+
       <style jsx global>{`
         @keyframes pulse {
           0% { transform: scale(1); }
           50% { transform: scale(1.02); }
           100% { transform: scale(1); }
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
         }
       `}</style>
       <style jsx>{`
@@ -447,12 +546,15 @@ export default function QuizSection() {
           --button-px: 32px;
 
           width: 100%;
+          max-width: var(--card-width);
+          margin: 0 auto;
+          padding: 0 16px;
+          box-sizing: border-box;
         }
         
         .quiz-container {
           width: 100%;
-          max-width: var(--card-width);
-          margin: 0 auto;
+          box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
@@ -476,6 +578,7 @@ export default function QuizSection() {
             --button-size: 18px;
             --button-py: 18px;
             --button-px: 28px;
+            padding: 0 12px;
           }
         }
 
@@ -499,6 +602,7 @@ export default function QuizSection() {
             --button-size: 17px;
             --button-py: 16px;
             --button-px: 24px;
+            padding: 0 8px;
           }
         }
 
@@ -522,6 +626,7 @@ export default function QuizSection() {
             --button-size: 16px;
             --button-py: 14px;
             --button-px: 20px;
+            padding: 0 8px;
           }
         }
       `}</style>
@@ -530,7 +635,6 @@ export default function QuizSection() {
         <div className="quiz-container">
           <div className="space-y-6">
           {quizSections.map((section, sectionIdx) => {
-            const isFirstSection = sectionIdx === 0;
             const firstQuestionInSection = section.questions[0];
             const restQuestions = section.questions.slice(1);
 
@@ -570,7 +674,7 @@ export default function QuizSection() {
                     padding: 'var(--content-padding)',
                     paddingTop: 'var(--content-pt)'
                   }}>
-                    {/* Circles divider - 6 circles creating scalloped edge */}
+                    {/* Circles divider */}
                     <div className="absolute left-0 right-0 flex justify-between items-center" style={{ 
                       top: 'calc(var(--circle-size) / -2)',
                       paddingLeft: '0',

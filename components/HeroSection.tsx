@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import QuizSection from './QuizSection';
 
 export default function HeroSection() {
   return (
@@ -52,6 +51,7 @@ export default function HeroSection() {
           max-width: var(--card-width);
           margin: 0 auto;
           padding: 0 16px;
+          box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
@@ -449,11 +449,6 @@ export default function HeroSection() {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Quiz Section */}
-        <div className="mt-8">
-          <QuizSection />
         </div>
       </div>
     </div>
