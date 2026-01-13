@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 interface QuizOption {
   label: string;
@@ -13,6 +15,7 @@ interface Question {
   id: number;
   text: string;
   options: QuizOption[];
+  description?: string;
 }
 
 interface QuizSection {
@@ -33,7 +36,7 @@ const correctAnswers: Record<number, string> = {
   8: 'grow-there',
   9: 'out-amend',
   10: 'allowances-tooth',
-  11: 'incorrect',
+  11: 'correct',
   12: 'incorrect',
   13: 'to-feed',
   14: 'was-was',
@@ -42,7 +45,7 @@ const correctAnswers: Record<number, string> = {
   17: 'could-not',
   18: 'arranged',
   19: 'dont-you',
-  20: 'will-get'
+  20: 'both'
 };
 
 const quizSections: QuizSection[] = [
@@ -52,7 +55,7 @@ const quizSections: QuizSection[] = [
     questions: [
       {
         id: 1,
-        text: "I forgot to buy vegetables for the curry. It totally slipped my _____. Things go in one _____ and out the other all th time!",
+        text: "I forgot to buy vegetables for the curry. It totally slipped my _____. Things go in one _____ and out the other all the time!",
         options: [
           { label: 'mind, tongue', value: 'mind-tongue' },
           { label: 'mind, ear', value: 'mind-ear' },
@@ -107,6 +110,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 6,
+        description: 'Choose the correct chunks / idioms / phrasal verbs or their forms to complete the sentences below',
         text: "After months of constant overtime, the project became so ______ that I started to ______ during meetings without realising it",
         options: [
           { label: 'exhausted, drift apart', value: 'exhausted-drift' },
@@ -140,7 +144,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 9,
-        text: "Orest tried to keep the party a secret, but the information managed to slip _____ before the event. So he decided to _____ the invitations",
+        text: "Orest tried to keep the party a secret, but the information managed to slip _____ before the event. So, he decided to _____ the invitations",
         options: [
           { label: 'out, amend', value: 'out-amend' },
           { label: 'out, decline', value: 'out-decline' },
@@ -186,6 +190,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 13,
+        description: 'Choose the correct option to fill in the gaps in the sentences below',
         text: "__________ (feed) the dog!",
         options: [
           { label: 'Remember feeding', value: 'feeding' },
@@ -218,7 +223,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 16,
-        text: 'The word "whereas" in the sentence below can be replaced by… \nWhereas Orest is very sociable and outgoing, I am quiet and shy',
+        text: '**The word "whereas" in the sentence below can be replaced by…**\n<u>Whereas</u> Orest is very sociable and outgoing, I am quiet and shy',
         options: [
           { label: 'In spite', value: 'in-spite' },
           { label: 'Whilst', value: 'whilst' },
@@ -228,7 +233,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 17,
-        text: "Which one DOESN'T show that something is possible, but not certain?",
+        text: "**Which one DOESN'T show that something is possible, but not certain?**",
         options: [
           { label: 'Machines could not replace human workers for many years', value: 'could-not' },
           { label: "Machines probably won't replace human workers for many years", value: 'probably-wont' },
@@ -238,7 +243,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 18,
-        text: "Choose the option that has the same meaning as the sentence below:\nI had a plan to meet Taras, and it didn't change",
+        text: "Choose the option that has the same meaning as the sentence below:\n**I had a plan to meet Taras, and it didn't change**",
         options: [
           { label: 'I had arranged to meet Taras after the show', value: 'arranged' },
           { label: 'I was planning to meet Taras after the show', value: 'planning' },
@@ -248,7 +253,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 19,
-        text: "Choose the option that CANNOT be used to fill in the gap in the sentence below:\nPick me up at eight, ______?",
+        text: "Choose the option that **CANNOT** be used to fill in the gap in the sentence below:\n**Pick me up at eight, ______?**",
         options: [
           { label: 'could you', value: 'could-you' },
           { label: "won't you", value: 'wont-you' },
@@ -259,7 +264,7 @@ const quizSections: QuizSection[] = [
       },
       {
         id: 20,
-        text: "Choose the option that best describes the future action mentioned in the sentence below\nDon't worry. I'll have the report finished before the meeting",
+        text: "Choose the option that best describes the future action mentioned in the sentence below\n**Don't worry. <u>I'll have the report finished</u> before the meeting**",
         options: [
           { label: 'I will do the report', value: 'will-do' },
           { label: 'I will get the report done', value: 'will-get' },
@@ -271,15 +276,25 @@ const quizSections: QuizSection[] = [
   }
 ];
 
-interface QuizSectionProps {
-  isFormValid?: boolean;
+interface ContactFormData {
+  name: string;
+  phone: string;
+  telegram: string;
+  instagram: string;
 }
 
-export default function QuizSection({ isFormValid = true }: QuizSectionProps) {
+interface QuizSectionProps {
+  isFormValid?: boolean;
+  formData?: ContactFormData;
+  leadId?: number; // ID ліда з CRM
+}
+
+export default function QuizSection({ isFormValid = true, formData, leadId }: QuizSectionProps) {
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [highlightedQuestion, setHighlightedQuestion] = useState<number | null>(null);
   const [showFormMessage, setShowFormMessage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAnswerChange = (questionId: number, value: string) => {
     // Якщо форма не заповнена, показуємо повідомлення та прокручуємо до форми
@@ -338,7 +353,7 @@ export default function QuizSection({ isFormValid = true }: QuizSectionProps) {
     return ids;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const allQuestionIds = getAllQuestionIds();
     const answeredQuestionIds = Object.keys(answers).map(id => parseInt(id, 10));
     
@@ -357,9 +372,104 @@ export default function QuizSection({ isFormValid = true }: QuizSectionProps) {
       return;
     }
 
+    // Розраховуємо score перед збереженням
     const finalScore = calculateScore();
+
+    // Зберігаємо дані в Google Sheets
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/sheets/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formData: formData || undefined,
+          answers: answers,
+          score: finalScore,
+          leadId: leadId,
+        }),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to save data:', result.error);
+        // Продовжуємо навіть якщо збереження не вдалося
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      // Продовжуємо навіть якщо збереження не вдалося
+    } finally {
+      setIsSaving(false);
+    }
+
+    // Якщо є lead_id, оновлюємо CRM
+    if (leadId) {
+      try {
+        const crmResponse = await fetch('/api/crm/complete-test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lead_id: leadId,
+            test_result: finalScore,
+          }),
+        });
+
+        const crmResult = await crmResponse.json();
+        if (!crmResult.success) {
+          console.error('Failed to update CRM:', crmResult.error);
+          // Продовжуємо навіть якщо оновлення CRM не вдалося
+        }
+      } catch (error) {
+        console.error('Error updating CRM:', error);
+        // Продовжуємо навіть якщо оновлення CRM не вдалося
+      }
+    }
+
     sessionStorage.setItem('quizScore', finalScore.toString());
+    // Зберігаємо відповіді для відображення на сторінці результатів
+    sessionStorage.setItem('quizAnswers', JSON.stringify(answers));
     router.push(`/results?score=${finalScore}`);
+  };
+
+  const renderQuestionText = (text: string, isHighlighted: boolean) => {
+    if (!text) return null;
+    
+    const color = isHighlighted ? '#F44336' : '#0E4486';
+    
+    // Замінюємо підкреслення для пропусків (gap) на HTML span перед обробкою маркдауном
+    // Також обробляємо переноси рядків
+    let processedText = text
+      .replace(/\n\n/g, '<br /><br />') // Подвійні переноси
+      .replace(/\n/g, '<br />') // Одиночні переноси
+      .replace(/(_{2,})/g, (match) => {
+        const length = match.length;
+        return `<span class="gap-underline" data-length="${length}" style="border-bottom: 2px solid ${color}; display: inline-block; min-width: ${length * 0.6}em; height: 1em; vertical-align: baseline; text-decoration: none;"></span>`;
+      });
+    
+    // Використовуємо react-markdown для обробки маркдауну
+    return (
+      <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          p: ({ children }: any) => <span>{children}</span>,
+          strong: ({ children }: any) => <strong style={{ color, textDecoration: 'none' }}>{children}</strong>,
+          em: ({ children }: any) => <em>{children}</em>,
+          br: () => <br />,
+          // Обробка HTML span для підкреслень
+          span: ({ className, style, ...props }: any) => {
+            if (className === 'gap-underline') {
+              return <span className={className} style={style} {...props} />;
+            }
+            return <span {...props} />;
+          },
+        }}
+      >
+        {processedText}
+      </ReactMarkdown>
+    );
   };
 
   const renderQuestion = (question: Question, isFirstInSection: boolean = false) => {
@@ -382,16 +492,57 @@ export default function QuizSection({ isFormValid = true }: QuizSectionProps) {
           boxShadow: isHighlighted ? '0 4px 12px rgba(244, 67, 54, 0.2)' : 'none'
         }}
       >
-        <p style={{
-          fontFamily: 'Craftwork Grotesk, sans-serif',
-          fontWeight: 400,
-          fontSize: 'var(--question-size)',
-          lineHeight: '150%',
-          color: isHighlighted ? '#F44336' : '#0E4486',
-          marginBottom: 'var(--spacing-question)'
-        }}>
-          <strong>{question.id}.</strong> {question.text}
-        </p>
+        {question.description && (
+          <div style={{
+            fontFamily: 'Craftwork Grotesk, sans-serif',
+            fontWeight: 500,
+            fontSize: 'var(--desc-size)',
+            lineHeight: '140%',
+            color: isHighlighted ? '#F44336' : '#0E4486',
+            marginBottom: 'var(--spacing-question)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px'
+          }}>
+            <Image 
+              src="/Vector.svg" 
+              alt="" 
+              width={24} 
+              height={24}
+              style={{ 
+                marginTop: '2px',
+                flexShrink: 0,
+                width: 'var(--radio-size)',
+                height: 'auto'
+              }}
+            />
+            <span style={{ textDecoration: 'none' }}>{renderQuestionText(question.description, isHighlighted)}</span>
+          </div>
+        )}
+        {question.text && (
+          <p style={{
+            fontFamily: 'Craftwork Grotesk, sans-serif',
+            fontWeight: 400,
+            fontSize: 'var(--question-size)',
+            lineHeight: '150%',
+            color: isHighlighted ? '#F44336' : '#0E4486',
+            marginBottom: 'var(--spacing-question)'
+          }}>
+            <strong>{question.id}.</strong> {renderQuestionText(question.text, isHighlighted)}
+          </p>
+        )}
+        {!question.text && !question.description && (
+          <p style={{
+            fontFamily: 'Craftwork Grotesk, sans-serif',
+            fontWeight: 400,
+            fontSize: 'var(--question-size)',
+            lineHeight: '150%',
+            color: isHighlighted ? '#F44336' : '#0E4486',
+            marginBottom: 'var(--spacing-question)'
+          }}>
+            <strong>{question.id}.</strong>
+          </p>
+        )}
       
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-option)' }}>
           {question.options.map((option, idx) => (

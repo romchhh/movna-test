@@ -1,15 +1,18 @@
 'use client';
 
+import { Suspense } from 'react';
 import HeroSection from '@/components/HeroSection';
 import QuizSection from '@/components/QuizSection';
+import PlacementTestContent from './PlacementTestContent';
 
 export default function PlacementTestPage() {
   return (
-    <div style={{ background: '#A7DAB6', minHeight: '100vh', paddingBottom: '70px' }}>
-      <HeroSection />
-      <div className="mt-8">
-        <QuizSection />
+    <Suspense fallback={
+      <div style={{ background: '#A7DAB6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>Завантаження...</div>
       </div>
-    </div>
+    }>
+      <PlacementTestContent />
+    </Suspense>
   );
 }

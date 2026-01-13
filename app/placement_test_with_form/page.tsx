@@ -50,7 +50,7 @@ export default function PlacementTestWithFormPage() {
       </div>
 
       <div id="quiz-section" style={{ marginTop: '32px' }}>
-        <QuizSection isFormValid={isFormValid} />
+        <QuizSection isFormValid={isFormValid} formData={formData} />
       </div>
     </div>
   );

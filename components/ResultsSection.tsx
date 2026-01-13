@@ -1,40 +1,221 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 interface ResultsSectionProps {
   score: number;
   totalQuestions: number;
 }
 
+// Правильні відповіді (імпортуємо з QuizSection або визначаємо тут)
+const correctAnswers: Record<number, string> = {
+  1: 'mind-ear',
+  2: 'speak-up-message',
+  3: 'insomniac-nap',
+  4: 'live-up-mess',
+  5: 'vary-cut',
+  6: 'taxing-zone',
+  7: 'red-away',
+  8: 'grow-there',
+  9: 'out-amend',
+  10: 'allowances-tooth',
+  11: 'correct',
+  12: 'incorrect',
+  13: 'to-feed',
+  14: 'was-was',
+  15: 'had-would',
+  16: 'whilst',
+  17: 'could-not',
+  18: 'arranged',
+  19: 'dont-you',
+  20: 'both'
+};
+
+// Питання для відображення
+const allQuestions = [
+  { id: 1, text: "I forgot to buy vegetables for the curry. It totally slipped my _____. Things go in one _____ and out the other all the time!" },
+  { id: 2, text: "Make sure you ______ so everyone can hear you. To ______ clearly, use visuals like photos or pictures" },
+  { id: 3, text: "I'm a(n) ______, so I often have a ______ in the afternoon to try to catch up on sleep" },
+  { id: 4, text: "My first stand-up comedy didn't quite ______ my expectations. Actually, it was a complete disaster, but I was determined not to ______" },
+  { id: 5, text: "I suddenly realised how unhealthy my diet was — full of sugar and salt. So, I made the decision to ______ my diet more and ______ processed foods" },
+  { id: 6, description: 'Choose the correct chunks / idioms / phrasal verbs or their forms to complete the sentences below', text: "After months of constant overtime, the project became so ______ that I started to ______ during meetings without realising it" },
+  { id: 7, text: "After reviewing the finances, it became clear that the company was _____ this quarter. The management decided to ______ several outdated policies to cut costs" },
+  { id: 8, text: "Although those siblings used to be inseparable, they slowly began to ______, but the older sister promised she would always ______ him when things got tough" },
+  { id: 9, text: "Orest tried to keep the party a secret, but the information managed to slip _____ before the event. So, he decided to _____ the invitations" },
+  { id: 10, text: "Solomiia had to ______ her colleague's mistakes and fight ______ to defend her team during the negotiations" },
+  { id: 11, text: "I do really want to take up the guitar" },
+  { id: 12, text: "Be bound to give me a call when you arrive at the hotel" },
+  { id: 13, description: 'Choose the correct option to fill in the gaps in the sentences below', text: "__________ (feed) the dog!" },
+  { id: 14, text: "What ____ most impressive in my childhood are the songs I recorded at home. It ____ my parents I had to thank for their understanding" },
+  { id: 15, text: "Orest was lucky. If his plane ________ crashed into the houses, some people ________ died" },
+  { id: 16, text: '**The word "whereas" in the sentence below can be replaced by…**\n__Whereas__ Orest is very sociable and outgoing, I am quiet and shy' },
+  { id: 17, text: "**Which one DOESN'T show that something is possible, but not certain?**" },
+  { id: 18, text: "Choose the option that has the same meaning as the sentence below:\n**I had a plan to meet Taras, and it didn't change**" },
+  { id: 19, text: "Choose the option that **CANNOT** be used to fill in the gap in the sentence below:\n\n**Pick me up at eight, ______?**" },
+  { id: 20, text: "Choose the option that best describes the future action mentioned in the sentence below\n\n**Don't worry. __I'll have the report finished__ before the meeting**" },
+];
+
+// Мапінг значень відповідей на читабельні тексти
+const answerLabels: Record<string, string> = {
+  'mind-tongue': 'mind, tongue',
+  'mind-ear': 'mind, ear',
+  'tongue-ear': 'tongue, ear',
+  'tongue-mind': 'tongue, mind',
+  'speak-up-message': 'speak up, get your message across',
+  'point-out-message': 'point out, get your message across',
+  'speak-up-come': 'speak up, come across',
+  'point-out-come': 'point out, come across',
+  'insomniac-lie-in': 'insomniac, lie-in',
+  'insomniac-nap': 'insomniac, nap',
+  'heavy-nap': 'heavy sleeper, nap',
+  'heavy-lie-in': 'heavy sleeper, lie-in',
+  'come-up-mess': 'come up with, mess up',
+  'live-up-mess': 'live up to, mess up',
+  'come-up-end': 'come up with, end up',
+  'live-up-end': 'live up to, end up',
+  'expand-cut': 'expand, cut down on',
+  'expand-keep': 'expand, keep down',
+  'vary-cut': 'vary, cut down on',
+  'vary-keep': 'vary, keep down',
+  'exhausted-drift': 'exhausted, drift apart',
+  'exhausted-zone': 'exhausted, zone out',
+  'taxing-drift': 'mentally taxing, drift apart',
+  'taxing-zone': 'mentally taxing, zone out',
+  'red-away': 'in the red, do away with',
+  'red-slip': 'in the red, slip out',
+  'drifting-away': 'drifting, do away with',
+  'drifting-slip': 'drifting, slip out',
+  'fall-stand': 'fall off, stand with',
+  'fall-there': 'fall off, be there for',
+  'grow-there': 'grow apart, be there for',
+  'grow-stand': 'grow apart, stand with',
+  'out-amend': 'out, amend',
+  'out-decline': 'out, decline',
+  'in-amend': 'in, amend',
+  'in-decline': 'in, decline',
+  'firm-cats': 'stand firm for, cats and dogs',
+  'firm-tooth': 'stand firm for, tooth and nail',
+  'allowances-cats': 'make allowances for, cats and dogs',
+  'allowances-tooth': 'make allowances for, tooth and nail',
+  'correct': 'correct',
+  'incorrect': 'incorrect',
+  'feeding': 'Remember feeding',
+  'to-feed': 'Remember to feed',
+  'is-are': 'is, are',
+  'was-were': 'was, were',
+  'is-is': 'is, is',
+  'was-was': 'was, was',
+  'wouldnt-had': "wouldn't, had",
+  'would-had': 'would, had',
+  'hadnt-would': "hadn't, would have",
+  'had-would': 'had, would have',
+  'in-spite': 'In spite',
+  'whilst': 'Whilst',
+  'through': 'Through',
+  'could-not': 'Machines could not replace human workers for many years',
+  'probably-wont': "Machines probably won't replace human workers for many years",
+  'may-not': 'Machines may not replace human workers for many years',
+  'arranged': 'I had arranged to meet Taras after the show',
+  'planning': 'I was planning to meet Taras after the show',
+  'meant': 'I was meant to meet Taras after the show',
+  'could-you': 'could you',
+  'wont-you': "won't you",
+  'dont-you': "don't you",
+  'will-you': 'will you',
+  'will-do': 'I will do the report',
+  'will-get': 'I will get the report done',
+  'both': 'Both',
+  'not-sure': 'not sure',
+};
+
 export default function ResultsSection({ score, totalQuestions }: ResultsSectionProps) {
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    // Отримуємо відповіді користувача з sessionStorage
+    const storedAnswers = sessionStorage.getItem('quizAnswers');
+    if (storedAnswers) {
+      try {
+        setUserAnswers(JSON.parse(storedAnswers));
+      } catch (e) {
+        console.error('Failed to parse answers:', e);
+      }
+    }
+  }, []);
+
+  const renderQuestionText = (text: string) => {
+    if (!text) return null;
+    
+    const color = '#0E4486';
+    
+    // Замінюємо підкреслення для пропусків (gap) на HTML span перед обробкою маркдауном
+    let processedText = text.replace(/(_{2,})/g, (match) => {
+      const length = match.length;
+      return `<span class="gap-underline" data-length="${length}" style="border-bottom: 2px solid ${color}; display: inline-block; min-width: ${length * 0.6}em; height: 1em; vertical-align: baseline; text-decoration: none;"></span>`;
+    });
+    
+    // Використовуємо react-markdown для обробки маркдауну
+    return (
+      <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+        components={{
+          p: ({ children }: any) => <span>{children}</span>,
+          strong: ({ children }: any) => <strong style={{ color, textDecoration: 'none' }}>{children}</strong>,
+          em: ({ children }: any) => <em>{children}</em>,
+          // Обробка HTML span для підкреслень
+          span: ({ className, style, ...props }: any) => {
+            if (className === 'gap-underline') {
+              return <span className={className} style={style} {...props} />;
+            }
+            return <span {...props} />;
+          },
+        }}
+      >
+        {processedText}
+      </ReactMarkdown>
+    );
+  };
   const getResultCategory = (score: number) => {
     if (score >= 0 && score <= 3) {
       return {
         range: '0-3 бали',
-        text: '— якщо ви зрозуміли суть завдань, (хоча і не знали правильної відповіді), вам буде комфортно на курсі B2.1: весь цей матеріал ми опануємо разом'
+        text: '— якщо ви зрозуміли суть завдань, (хоча і не знали правильної відповіді), вам буде комфортно на курсі B2.1: весь цей матеріал ми опануємо разом',
+        level: 'B2.1 (початковий рівень)'
       };
     } else if (score >= 4 && score <= 8) {
       return {
         range: '4-8 балів',
-        text: '— ви вже маєте потрібну базу і курс Level Up В2.1 стане дуже потужним бустом для вашої англійської. Найбільше для себе ви візьмете на тарифі з груповими/індивідуальними заняттями'
+        text: '— ви вже маєте потрібну базу і курс Level Up В2.1 стане дуже потужним бустом для вашої англійської. Найбільше для себе ви візьмете на тарифі з груповими/індивідуальними заняттями',
+        level: 'B2.1 (середній рівень)'
       };
     } else if (score >= 9 && score <= 12) {
       return {
         range: '9-12 балів',
-        text: '— ви вже маєте непоганий В2. Вам добре підійде курс B2.2, зокрема тариф зі зворотним зв\'язком від ментора (щоб ставити уточнювальні запитання) або з груповими чи індивідуальними заняттями'
+        text: '— ви вже маєте непоганий В2. Вам добре підійде курс B2.2, зокрема тариф зі зворотним зв\'язком від ментора (щоб ставити уточнювальні запитання) або з груповими чи індивідуальними заняттями',
+        level: 'B2.2'
       };
     } else if (score >= 13 && score <= 17) {
       return {
         range: '13-17 балів',
-        text: '— у вас вже хороший В2! Можливо, має сенс розглянути рівень B2, але самостійний тариф з матеріалами, щоб допрацювати невеликі прогалини самостійно. Або ж, пірнати у вивчення англи на рівні С1'
+        text: '— у вас вже хороший В2! Можливо, має сенс розглянути рівень B2, але самостійний тариф з матеріалами, щоб допрацювати невеликі прогалини самостійно. Або ж, пірнати у вивчення англи на рівні С1',
+        level: 'B2 (просунутий) / C1 (початковий)'
       };
     } else {
       return {
         range: '18-20 балів',
-        text: '— у вас дуже класний В2! Настав час опанувати англійську на рівні С1, щоб завдяки підтримці ментора вільно висловлювати свої думки, володіючи тонкощами високого рівня'
+        text: '— у вас дуже класний В2! Настав час опанувати англійську на рівні С1, щоб завдяки підтримці ментора вільно висловлювати свої думки, володіючи тонкощами високого рівня',
+        level: 'C1'
       };
     }
+  };
+
+  // Функція для отримання текстового результату для CRM
+  const getResultTextForCRM = (score: number): string => {
+    const result = getResultCategory(score);
+    return `${result.range} — ${result.level}`;
   };
 
   const currentResult = getResultCategory(score);
@@ -192,9 +373,22 @@ export default function ResultsSection({ score, totalQuestions }: ResultsSection
                 lineHeight: '120%',
                 textAlign: 'center',
                 color: '#FFFFFF',
-                margin: '0'
+                margin: '0',
+                marginBottom: '8px'
               }}>
-                Ваш результат: {score}
+                Ваш результат: {score} / {totalQuestions}
+              </p>
+              <p style={{
+                fontFamily: 'Craftwork Grotesk, sans-serif',
+                fontWeight: 500,
+                fontSize: 'calc(var(--subtitle-size) * 0.75)',
+                lineHeight: '140%',
+                textAlign: 'center',
+                color: '#FFFFFF',
+                margin: '0',
+                opacity: 0.9
+              }}>
+                {currentResult.range} — {currentResult.level}
               </p>
             </div>
 
@@ -318,6 +512,150 @@ export default function ResultsSection({ score, totalQuestions }: ResultsSection
               </div>
             </div>
           </div>
+
+          {/* Answers Review Section */}
+          {Object.keys(userAnswers).length > 0 && (
+            <div 
+              style={{
+                background: '#F1EEE9',
+                borderRadius: 'var(--border-radius)',
+                padding: 'var(--content-padding)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                marginBottom: 'var(--spacing-section)'
+              }}
+            >
+              <h4 style={{
+                fontFamily: 'Craftwork Grotesk, sans-serif',
+                fontWeight: 700,
+                fontSize: 'var(--text-size)',
+                lineHeight: '120%',
+                letterSpacing: '0%',
+                color: '#0E4486',
+                margin: '0 0 20px 0',
+                textAlign: 'left'
+              }}>
+                Ваші відповіді:
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {allQuestions.map((question) => {
+                  const userAnswer = userAnswers[question.id];
+                  const correctAnswer = correctAnswers[question.id];
+                  
+                  // Перевіряємо чи відповідь правильна (порівнюємо значення)
+                  const isCorrect = userAnswer && correctAnswer && userAnswer === correctAnswer;
+                  
+                  const userAnswerLabel = answerLabels[userAnswer] || userAnswer || 'Не відповів';
+                  const correctAnswerLabel = answerLabels[correctAnswer] || correctAnswer;
+
+                  return (
+                    <div 
+                      key={question.id}
+                      style={{
+                        padding: '16px',
+                        background: '#FFFFFF',
+                        borderRadius: '12px',
+                        border: `2px solid ${isCorrect ? '#4CAF50' : '#F44336'}`,
+                      }}
+                    >
+                      {(question as any).description && (
+                        <div style={{
+                          fontFamily: 'Craftwork Grotesk, sans-serif',
+                          fontWeight: 500,
+                          fontSize: 'calc(var(--text-size) * 0.85)',
+                          lineHeight: '140%',
+                          color: '#0E4486',
+                          margin: '0 0 8px 0',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px'
+                        }}>
+                          <Image 
+                            src="/Vector.svg" 
+                            alt="" 
+                            width={20} 
+                            height={20}
+                            style={{ 
+                              marginTop: '2px',
+                              flexShrink: 0,
+                              width: '20px',
+                              height: 'auto'
+                            }}
+                          />
+                          <span>{renderQuestionText((question as any).description || '')}</span>
+                        </div>
+                      )}
+                      {question.text && (
+                        <p style={{
+                          fontFamily: 'Craftwork Grotesk, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 'calc(var(--text-size) * 0.9)',
+                          lineHeight: '140%',
+                          color: '#0E4486',
+                          margin: '0 0 12px 0',
+                        }}>
+                          <strong>Питання {question.id}:</strong> {renderQuestionText(question.text)}
+                        </p>
+                      )}
+                      {!question.text && !(question as any).description && (
+                        <p style={{
+                          fontFamily: 'Craftwork Grotesk, sans-serif',
+                          fontWeight: 600,
+                          fontSize: 'calc(var(--text-size) * 0.9)',
+                          lineHeight: '140%',
+                          color: '#0E4486',
+                          margin: '0 0 12px 0',
+                        }}>
+                          <strong>Питання {question.id}</strong>
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div>
+                          <span style={{
+                            fontFamily: 'Craftwork Grotesk, sans-serif',
+                            fontWeight: 600,
+                            fontSize: 'calc(var(--text-size) * 0.85)',
+                            color: '#0E4486',
+                          }}>
+                            Ваша відповідь: 
+                          </span>
+                          <span style={{
+                            fontFamily: 'Craftwork Grotesk, sans-serif',
+                            fontWeight: 700,
+                            fontSize: 'calc(var(--text-size) * 0.85)',
+                            color: isCorrect ? '#4CAF50' : '#F44336',
+                            marginLeft: '8px',
+                          }}>
+                            {userAnswerLabel}
+                          </span>
+                        </div>
+                        {!isCorrect && (
+                          <div>
+                            <span style={{
+                              fontFamily: 'Craftwork Grotesk, sans-serif',
+                              fontWeight: 600,
+                              fontSize: 'calc(var(--text-size) * 0.85)',
+                              color: '#0E4486',
+                            }}>
+                              Правильна відповідь: 
+                            </span>
+                            <span style={{
+                              fontFamily: 'Craftwork Grotesk, sans-serif',
+                              fontWeight: 700,
+                              fontSize: 'calc(var(--text-size) * 0.85)',
+                              color: '#4CAF50',
+                              marginLeft: '8px',
+                            }}>
+                              {correctAnswerLabel}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
