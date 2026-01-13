@@ -10,7 +10,7 @@ class CRMConfig:
     test_result_uuid: str = "LD_1026"
     status_in_progress: int = 295
     status_completed: int = 417
-    base_test_url: str = "https://movna-test.vercel.app"
+    base_test_url: str = "https://levelup.movna.online/"
     check_interval: int = 60
 
     @classmethod
@@ -19,7 +19,7 @@ class CRMConfig:
             "CRM_API_KEY", 
             "NTcwMTFlMmExZWE4M2Q3MGU5NTlhMjVmNmEzNTdiODA2NjMyY2FkMQ"
         )
-        base_test_url = os.getenv("BASE_TEST_URL", "https://movna-test.vercel.app")
+        base_test_url = os.getenv("BASE_TEST_URL", "https://levelup.movna.online/")
         check_interval = int(os.getenv("CRM_CHECK_INTERVAL", "60"))
         
         return cls(
