@@ -375,6 +375,16 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
     // Розраховуємо score перед збереженням
     const finalScore = calculateScore();
 
+    // Логування для дебагу
+    console.log('[QuizSection] Submitting test results:', {
+      hasFormData: !!formData,
+      formDataName: formData?.name,
+      formDataPhone: formData?.phone,
+      score: finalScore,
+      leadId: leadId,
+      willCreateLead: !leadId && formData && (formData.name || formData.phone),
+    });
+
     // Зберігаємо дані в Google Sheets
     setIsSaving(true);
     try {

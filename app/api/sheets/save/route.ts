@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
+import { getResultTextForCRM } from '@/utils/getResultText';
 
 // Отримуємо ID таблиці з змінних оточення
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
@@ -34,6 +35,16 @@ export async function POST(request: Request) {
 
     const body: SaveDataRequest = await request.json();
     const { formData, answers, score, leadId } = body;
+
+    // Логування для дебагу
+    console.log('[Sheets Save API] Request received:', {
+      hasFormData: !!formData,
+      formDataName: formData?.name,
+      formDataPhone: formData?.phone,
+      score,
+      leadId,
+      willCreateLead: !leadId && formData && (formData.name || formData.phone) && typeof score === 'number',
+    });
 
     // Отримуємо дані з CRM, якщо є leadId
     let crmData: {
@@ -304,9 +315,72 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Data saved successfully' 
+    // Якщо це новий користувач (немає leadId), є форма та результат тесту,
+    // створюємо нового ліда в KeyCRM у статусі "Новий" (ID 293)
+    const hasValidFormData = formData && (formData.name || formData.phone);
+    if (!leadId && hasValidFormData && typeof score === 'number') {
+      try {
+        // Лог для дебагу створення ліда в CRM
+        console.log('[CRM] Creating new lead from test form', {
+          hasFormData: !!formData,
+          formDataName: formData?.name,
+          formDataPhone: formData?.phone,
+          score,
+          leadId,
+        });
+
+        const CRM_API_KEY = process.env.CRM_API_KEY;
+        if (CRM_API_KEY) {
+          const crmHeaders = {
+            Authorization: `Bearer ${CRM_API_KEY}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          };
+
+          const resultText = getResultTextForCRM(score);
+
+          // Створюємо нового ліда у статусі "Новий" (ID 293) з джерелом 32
+          const crmResponse = await fetch('https://openapi.keycrm.app/v1/pipelines/cards', {
+            method: 'POST',
+            headers: crmHeaders,
+            body: JSON.stringify({
+              title: formData.name || 'Лід з тесту',
+              pipeline_id: 16, // ID воронки (з Python-скрипта: ID воронки 16)
+              status_id: 293, // статус "Новий" з вашої воронки
+              source_id: 32, // ID джерела: 32 (з Python-скрипта)
+              contact: {
+                full_name: formData.name || '',
+                phone: formData.phone || '',
+                // за бажанням можна зберігати socials
+              },
+              custom_fields: [
+                {
+                  uuid: 'LD_1026', // Результат тестування
+                  value: resultText,
+                },
+              ],
+            }),
+          });
+
+          if (!crmResponse.ok) {
+            const errorText = await crmResponse.text().catch(() => '');
+            console.error('[CRM] Lead create failed:', crmResponse.status, errorText);
+          } else {
+            const data = await crmResponse.json().catch(() => null);
+            console.log('[CRM] Lead created successfully from test form', data);
+          }
+        } else {
+          console.error('[CRM] CRM_API_KEY is not configured on server, lead not created');
+        }
+      } catch (error) {
+        console.error('Error creating CRM lead:', error);
+        // Не блокуємо користувача, якщо CRM недоступний
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Data saved successfully',
     });
   } catch (error: any) {
     console.error('Error saving data:', error);
