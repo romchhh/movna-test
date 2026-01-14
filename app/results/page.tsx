@@ -39,7 +39,7 @@ function ResultsContent() {
   if (score === null) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ 
-        background: '#A7DAB6'
+        background: '#C7D2DF'
       }}>
         <div>Завантаження...</div>
       </div>
@@ -48,7 +48,7 @@ function ResultsContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ 
-      background: '#A7DAB6',
+      background: '#C7D2DF',
       padding: '16px 0'
     }}>
       <style jsx>{`
@@ -86,7 +86,7 @@ export default function ResultsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ 
-        background: '#A7DAB6'
+        background: '#C7D2DF'
       }}>
         <div>Завантаження...</div>
       </div>

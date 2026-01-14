@@ -5,7 +5,7 @@ import Image from 'next/image';
 export default function HeroSection() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ 
-      background: '#A7DAB6',
+      background: '#C7D2DF',
       padding: 'var(--spacing-outer, 16px) 0'
     }}>
       <style jsx>{`

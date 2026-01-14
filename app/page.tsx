@@ -7,7 +7,7 @@ export default function WelcomePage() {
   const router = useRouter();
 
   return (
-    <div style={{ background: '#A7DAB6', minHeight: '100vh', paddingBottom: '70px' }}>
+    <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px' }}>
       <HeroSection />
       <div style={{
         width: '100%',

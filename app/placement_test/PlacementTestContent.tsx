@@ -9,7 +9,7 @@ export default function PlacementTestContent() {
   const leadId = searchParams.get('id') ? parseInt(searchParams.get('id')!, 10) : undefined;
 
   return (
-    <div style={{ background: '#A7DAB6', minHeight: '100vh', paddingBottom: '70px' }}>
+    <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px' }}>
       <HeroSection />
       <div className="mt-8">
         <QuizSection leadId={leadId} />

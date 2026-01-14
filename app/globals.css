@@ -34,7 +34,7 @@
 }
 
 :root {
-  --background: #A7DAB6;
+  --background: #C7D2DF;
   --foreground: #171717;
 }
 
@@ -53,7 +53,7 @@
 }
 
 body {
-  background: #A7DAB6;
+  background: #C7D2DF;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   margin: 0;
@@ -61,7 +61,7 @@ body {
 }
 
 html {
-  background: #A7DAB6;
+  background: #C7D2DF;
 }
 
 .header-section {
