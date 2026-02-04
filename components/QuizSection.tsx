@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -295,6 +295,7 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
   const [highlightedQuestion, setHighlightedQuestion] = useState<number | null>(null);
   const [showFormMessage, setShowFormMessage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const submittingRef = useRef(false);
 
   const handleAnswerChange = (questionId: number, value: string) => {
     // Якщо форма не заповнена, показуємо повідомлення та прокручуємо до форми
@@ -353,15 +354,15 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
     return ids;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
+    // Захист від дублів: один сабміт за раз (подвійний клік, Strict Mode тощо)
+    if (submittingRef.current) return;
     const allQuestionIds = getAllQuestionIds();
     const answeredQuestionIds = Object.keys(answers).map(id => parseInt(id, 10));
-    
     const firstUnansweredId = allQuestionIds.find(id => !answeredQuestionIds.includes(id));
-    
+
     if (firstUnansweredId !== undefined) {
       setHighlightedQuestion(firstUnansweredId);
-      
       setTimeout(() => {
         const questionElement = document.getElementById(`question-${firstUnansweredId}`);
         if (questionElement) {
@@ -372,75 +373,46 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
       return;
     }
 
-    // Розраховуємо score перед збереженням
     const finalScore = calculateScore();
-
-    // Логування для дебагу
-    console.log('[QuizSection] Submitting test results:', {
-      hasFormData: !!formData,
-      formDataName: formData?.name,
-      formDataPhone: formData?.phone,
-      score: finalScore,
-      leadId: leadId,
-      willCreateLead: !leadId && formData && (formData.name || formData.phone),
-    });
-
-    // Зберігаємо дані в Google Sheets
+    submittingRef.current = true;
     setIsSaving(true);
-    try {
-      const response = await fetch('/api/sheets/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          formData: formData || undefined,
-          answers: answers,
-          score: finalScore,
-          leadId: leadId,
-        }),
-      });
 
-      const result = await response.json();
-      if (!result.success) {
-        console.error('Failed to save data:', result.error);
-        // Продовжуємо навіть якщо збереження не вдалося
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      // Продовжуємо навіть якщо збереження не вдалося
-    } finally {
-      setIsSaving(false);
-    }
-
-    // Якщо є lead_id, оновлюємо CRM
-    if (leadId) {
-      try {
-        const crmResponse = await fetch('/api/crm/complete-test', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            lead_id: leadId,
-            test_result: finalScore,
-          }),
-        });
-
-        const crmResult = await crmResponse.json();
-        if (!crmResult.success) {
-          console.error('Failed to update CRM:', crmResult.error);
-          // Продовжуємо навіть якщо оновлення CRM не вдалося
-        }
-      } catch (error) {
-        console.error('Error updating CRM:', error);
-        // Продовжуємо навіть якщо оновлення CRM не вдалося
-      }
-    }
-
+    // Зберігаємо в sessionStorage одразу — сторінка результатів їх використає
     sessionStorage.setItem('quizScore', finalScore.toString());
-    // Зберігаємо відповіді для відображення на сторінці результатів
     sessionStorage.setItem('quizAnswers', JSON.stringify(answers));
+
+    // Відправка в таблицю та CRM асинхронно (fire-and-forget), щоб не блокувати перехід
+    const payload = {
+      formData: formData || undefined,
+      answers,
+      score: finalScore,
+      leadId,
+    };
+    fetch('/api/sheets/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (!result.success) console.error('Failed to save data:', result.error);
+      })
+      .catch((err) => console.error('Error saving data:', err));
+
+    if (leadId) {
+      fetch('/api/crm/complete-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: leadId, test_result: finalScore }),
+      })
+        .then((res) => res.json())
+        .then((crmResult) => {
+          if (!crmResult.success) console.error('Failed to update CRM:', crmResult.error);
+        })
+        .catch((err) => console.error('Error updating CRM:', err));
+    }
+
+    // Одразу перехід на результати — без очікування таблиць/CRM
     router.push(`/results?score=${finalScore}`);
   };
 
@@ -908,10 +880,12 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
 
           {/* Submit Button */}
           <div style={{ marginTop: 'calc(var(--spacing-section) + 8px)' }}>
-            <button 
+            <button
+              type="button"
+              disabled={isSaving}
               style={{
                 width: '100%',
-                background: '#0E4486',
+                background: isSaving ? '#6B8BA4' : '#0E4486',
                 color: '#FFFFFF',
                 fontFamily: 'Craftwork Grotesk, sans-serif',
                 fontWeight: 600,
@@ -919,23 +893,25 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
                 padding: 'var(--button-py) var(--button-px)',
                 borderRadius: 'var(--border-radius)',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                opacity: isSaving ? 0.9 : 1,
               }}
               onMouseEnter={(e) => {
+                if (isSaving) return;
                 e.currentTarget.style.background = '#0D3D76';
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#0E4486';
+                e.currentTarget.style.background = isSaving ? '#6B8BA4' : '#0E4486';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
               }}
               onClick={handleSubmit}
             >
-              Дізнатися результат
+              {isSaving ? 'Перехід до результатів…' : 'Дізнатися результат'}
             </button>
           </div>
         </div>
