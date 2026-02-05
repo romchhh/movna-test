@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 import ContactForm from '@/components/ContactForm';
@@ -13,7 +13,7 @@ interface ContactFormData {
   instagram: string;
 }
 
-export default function PlacementTestWithFormPage() {
+function PlacementTestWithFormContent() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
@@ -32,15 +32,8 @@ export default function PlacementTestWithFormPage() {
       utm_term: searchParams.get('utm_term') || '',
     };
 
-    console.log('[PlacementTestWithForm] URL search params:', searchParams.toString());
-    console.log('[PlacementTestWithForm] Extracted UTM params:', utmParams);
-
-    // Зберігаємо тільки якщо є хоча б одна мітка
     if (Object.values(utmParams).some(val => val)) {
       sessionStorage.setItem('utm_params', JSON.stringify(utmParams));
-      console.log('[PlacementTestWithForm] UTM params saved to sessionStorage');
-    } else {
-      console.log('[PlacementTestWithForm] No UTM params found in URL');
     }
   }, [searchParams]);
 
@@ -54,7 +47,7 @@ export default function PlacementTestWithFormPage() {
 
   // Перевірка правильності форми
   const phoneDigits = formData.phone.replace(/\D/g, '');
-  const isFormValid = 
+  const isFormValid =
     formData.name.trim() !== '' &&
     formData.phone.trim() !== '' &&
     phoneDigits.length === 10 &&
@@ -68,7 +61,7 @@ export default function PlacementTestWithFormPage() {
   return (
     <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px' }}>
       <HeroSection />
-      
+
       <div id="contact-form-section">
         <ContactForm onSubmit={handleFormSubmit} onFormChange={handleFormChange} />
       </div>
@@ -77,5 +70,17 @@ export default function PlacementTestWithFormPage() {
         <QuizSection isFormValid={isFormValid} formData={formData} />
       </div>
     </div>
+  );
+}
+
+export default function PlacementTestWithFormPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <HeroSection />
+      </div>
+    }>
+      <PlacementTestWithFormContent />
+    </Suspense>
   );
 }

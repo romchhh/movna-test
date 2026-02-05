@@ -1,9 +1,10 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 
-export default function WelcomePage() {
+function WelcomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -11,7 +12,7 @@ export default function WelcomePage() {
     // Зберігаємо UTM-мітки перед переходом (якщо є)
     const utmParams = new URLSearchParams();
     const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'id'];
-    
+
     utmKeys.forEach(key => {
       const value = searchParams.get(key);
       if (value) {
@@ -65,5 +66,17 @@ export default function WelcomePage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function WelcomePage() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <HeroSection />
+      </div>
+    }>
+      <WelcomePageContent />
+    </Suspense>
   );
 }
