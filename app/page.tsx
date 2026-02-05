@@ -1,10 +1,28 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 
 export default function WelcomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleStartTest = () => {
+    // Зберігаємо UTM-мітки перед переходом (якщо є)
+    const utmParams = new URLSearchParams();
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'id'];
+    
+    utmKeys.forEach(key => {
+      const value = searchParams.get(key);
+      if (value) {
+        utmParams.set(key, value);
+      }
+    });
+
+    const queryString = utmParams.toString();
+    const targetUrl = queryString ? `/placement_test_with_form?${queryString}` : '/placement_test_with_form';
+    router.push(targetUrl);
+  };
 
   return (
     <div style={{ background: '#C7D2DF', minHeight: '100vh', paddingBottom: '70px' }}>
@@ -18,7 +36,7 @@ export default function WelcomePage() {
         justifyContent: 'center'
       }}>
         <button
-          onClick={() => router.push('/placement_test_with_form')}
+          onClick={handleStartTest}
           style={{
             background: '#0E4486',
             color: '#FFFFFF',

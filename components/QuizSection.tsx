@@ -381,13 +381,30 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
     sessionStorage.setItem('quizScore', finalScore.toString());
     sessionStorage.setItem('quizAnswers', JSON.stringify(answers));
 
+    // Зчитуємо UTM-мітки з sessionStorage (якщо є)
+    let utmParams = null;
+    try {
+      const storedUtm = sessionStorage.getItem('utm_params');
+      console.log('[QuizSection] UTM from sessionStorage:', storedUtm);
+      if (storedUtm) {
+        utmParams = JSON.parse(storedUtm);
+        console.log('[QuizSection] Parsed UTM params:', utmParams);
+      } else {
+        console.log('[QuizSection] No UTM params in sessionStorage');
+      }
+    } catch (err) {
+      console.error('Error parsing UTM params:', err);
+    }
+
     // Відправка в таблицю та CRM асинхронно (fire-and-forget), щоб не блокувати перехід
     const payload = {
       formData: formData || undefined,
       answers,
       score: finalScore,
       leadId,
+      utmParams,
     };
+    console.log('[QuizSection] Final payload being sent:', payload);
     fetch('/api/sheets/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

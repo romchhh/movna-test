@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import HeroSection from '@/components/HeroSection';
 import ContactForm from '@/components/ContactForm';
 import QuizSection from '@/components/QuizSection';
@@ -13,12 +14,35 @@ interface ContactFormData {
 }
 
 export default function PlacementTestWithFormPage() {
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     phone: '',
     telegram: '',
     instagram: ''
   });
+
+  // Зчитуємо UTM-мітки з URL та зберігаємо в sessionStorage
+  useEffect(() => {
+    const utmParams = {
+      utm_source: searchParams.get('utm_source') || '',
+      utm_medium: searchParams.get('utm_medium') || '',
+      utm_campaign: searchParams.get('utm_campaign') || '',
+      utm_content: searchParams.get('utm_content') || '',
+      utm_term: searchParams.get('utm_term') || '',
+    };
+
+    console.log('[PlacementTestWithForm] URL search params:', searchParams.toString());
+    console.log('[PlacementTestWithForm] Extracted UTM params:', utmParams);
+
+    // Зберігаємо тільки якщо є хоча б одна мітка
+    if (Object.values(utmParams).some(val => val)) {
+      sessionStorage.setItem('utm_params', JSON.stringify(utmParams));
+      console.log('[PlacementTestWithForm] UTM params saved to sessionStorage');
+    } else {
+      console.log('[PlacementTestWithForm] No UTM params found in URL');
+    }
+  }, [searchParams]);
 
   const handleFormSubmit = (data: ContactFormData) => {
     setFormData(data);

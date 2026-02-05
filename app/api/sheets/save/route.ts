@@ -19,6 +19,13 @@ interface SaveDataRequest {
   answers: Record<number, string>; // questionId -> answer value
   score?: number; // Результат тесту
   leadId?: number; // ID ліда з CRM
+  utmParams?: {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+  };
 }
 
 export async function POST(request: Request) {
@@ -34,7 +41,7 @@ export async function POST(request: Request) {
     }
 
     const body: SaveDataRequest = await request.json();
-    const { formData, answers, score, leadId } = body;
+    const { formData, answers, score, leadId, utmParams } = body;
 
     // Логування для дебагу
     console.log('[Sheets Save API] Request received:', {
@@ -43,6 +50,7 @@ export async function POST(request: Request) {
       formDataPhone: formData?.phone,
       score,
       leadId,
+      utmParams,
       willCreateLead: !leadId && formData && (formData.name || formData.phone) && typeof score === 'number',
     });
 
@@ -340,26 +348,39 @@ export async function POST(request: Request) {
           const resultText = getResultTextForCRM(score);
 
           // Створюємо нового ліда у статусі "Новий" (ID 293) з джерелом 32
+          const crmPayload: any = {
+            title: formData.name || 'Лід з тесту',
+            pipeline_id: 16, // ID воронки (з Python-скрипта: ID воронки 16)
+            status_id: 293, // статус "Новий" з вашої воронки
+            source_id: 32, // ID джерела: 32 (з Python-скрипта)
+            contact: {
+              full_name: formData.name || '',
+              phone: formData.phone || '',
+              // за бажанням можна зберігати socials
+            },
+            custom_fields: [
+              {
+                uuid: 'LD_1026', // Результат тестування
+                value: resultText,
+              },
+            ],
+          };
+
+          // Додаємо UTM безпосередньо на верхньому рівні (не як вкладений об'єкт)
+          if (utmParams) {
+            if (utmParams.utm_source) crmPayload.utm_source = utmParams.utm_source;
+            if (utmParams.utm_medium) crmPayload.utm_medium = utmParams.utm_medium;
+            if (utmParams.utm_campaign) crmPayload.utm_campaign = utmParams.utm_campaign;
+            if (utmParams.utm_content) crmPayload.utm_content = utmParams.utm_content;
+            if (utmParams.utm_term) crmPayload.utm_term = utmParams.utm_term;
+          }
+
+          console.log('[CRM] Payload being sent to KeyCRM:', JSON.stringify(crmPayload, null, 2));
+
           const crmResponse = await fetch('https://openapi.keycrm.app/v1/pipelines/cards', {
             method: 'POST',
             headers: crmHeaders,
-            body: JSON.stringify({
-              title: formData.name || 'Лід з тесту',
-              pipeline_id: 16, // ID воронки (з Python-скрипта: ID воронки 16)
-              status_id: 293, // статус "Новий" з вашої воронки
-              source_id: 32, // ID джерела: 32 (з Python-скрипта)
-              contact: {
-                full_name: formData.name || '',
-                phone: formData.phone || '',
-                // за бажанням можна зберігати socials
-              },
-              custom_fields: [
-                {
-                  uuid: 'LD_1026', // Результат тестування
-                  value: resultText,
-                },
-              ],
-            }),
+            body: JSON.stringify(crmPayload),
           });
 
           if (!crmResponse.ok) {
