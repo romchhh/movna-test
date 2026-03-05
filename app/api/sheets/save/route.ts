@@ -324,7 +324,7 @@ export async function POST(request: Request) {
     }
 
     // Якщо це новий користувач (немає leadId), є форма та результат тесту,
-    // створюємо нового ліда в KeyCRM у статусі "Новий" (ID 293)
+    // створюємо нового ліда в KeyCRM у статусі "Новий" (ID 437)
     const hasValidFormData = formData && (formData.name || formData.phone);
     if (!leadId && hasValidFormData && typeof score === 'number') {
       try {
@@ -347,11 +347,11 @@ export async function POST(request: Request) {
 
           const resultText = getResultTextForCRM(score);
 
-          // Створюємо нового ліда у статусі "Новий" (ID 293) з джерелом 32
+          // Створюємо нового ліда у статусі "Новий" (ID 437) з джерелом 32
           const crmPayload: any = {
             title: formData.name || 'Лід з тесту',
-            pipeline_id: 16, // ID воронки (з Python-скрипта: ID воронки 16)
-            status_id: 293, // статус "Новий" з вашої воронки
+            pipeline_id: 26, // ID воронки (з Python-скрипта: ID воронки 26)
+            status_id: 437, // статус "Новий" у воронці 26
             source_id: 32, // ID джерела: 32 (з Python-скрипта)
             contact: {
               full_name: formData.name || '',

@@ -4,7 +4,7 @@ import { getResultTextForCRM } from '@/utils/getResultText';
 const CRM_API_KEY = process.env.CRM_API_KEY;
 const CRM_BASE_URL = 'https://openapi.keycrm.app/v1';
 const TEST_RESULT_UUID = 'LD_1026';
-const STATUS_COMPLETED = 417;
+const STATUS_COMPLETED = 449;
 
 interface CompleteTestRequest {
   lead_id: number;

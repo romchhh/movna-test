@@ -8,8 +8,8 @@ class CRMConfig:
     base_url: str = "https://openapi.keycrm.app/v1"
     test_link_uuid: str = "LD_1024"
     test_result_uuid: str = "LD_1026"
-    status_in_progress: int = 295
-    status_completed: int = 417
+    status_in_progress: int = 448   # "Проходження тесту" у воронці 26
+    status_completed: int = 449     # "Пройшли тест" у воронці 26
     base_test_url: str = "https://levelup.movna.online/"
     check_interval: int = 60
 
