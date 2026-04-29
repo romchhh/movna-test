@@ -64,6 +64,13 @@ html {
   background: #C7D2DF;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 72px;
+  }
+}
+
 .header-section {
   /* На мобільних: top offset (122.44px) + photo height without scale (509.4px) */
   height: calc(122.44px + 509.4px);

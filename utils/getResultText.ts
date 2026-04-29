@@ -1,24 +1,29 @@
-// Функція для отримання текстового результату тесту для CRM
-export function getResultTextForCRM(score: number): string {
-  let range: string;
-  let level: string;
-  
-  if (score >= 0 && score <= 3) {
-    range = '0-3 бали';
-    level = 'B2.1 (початковий рівень)';
-  } else if (score >= 4 && score <= 8) {
-    range = '4-8 балів';
-    level = 'B2.1 (середній рівень)';
-  } else if (score >= 9 && score <= 12) {
-    range = '9-12 балів';
-    level = 'B2.2';
-  } else if (score >= 13 && score <= 17) {
-    range = '13-17 балів';
-    level = 'B2 (просунутий) / C1 (початковий)';
-  } else {
-    range = '18-20 балів';
-    level = 'C1';
+import type { PlacementOutcome } from '@/lib/placementQuizData';
+import { PLACEMENT_TOTAL_QUESTIONS } from '@/lib/placementQuizData';
+
+function summaryForOutcome(outcome: PlacementOutcome | string | undefined): string {
+  const o = outcome || 'completed';
+  if (o === 'completed') {
+    return 'рекомендація: Level Up C1';
   }
-  
-  return `Результат тестування: ${score} - ${range} — ${level}`;
+  if (o === 'failed_step_1') {
+    return 'рекомендація: майбутні програми A1-A2';
+  }
+  if (o === 'failed_step_2' || o === 'failed_step_3') {
+    return 'рекомендація: Level Up B1';
+  }
+  if (o === 'failed_step_4' || o === 'failed_step_5') {
+    return 'рекомендація: Level Up B2';
+  }
+  return 'результат placement';
+}
+
+/** Текст одним рядком у поле результату CRM */
+export function getResultTextForCRM(
+  score: number,
+  outcome?: PlacementOutcome | string
+): string {
+  const max = PLACEMENT_TOTAL_QUESTIONS;
+  const summary = summaryForOutcome(outcome);
+  return `Placement Level Up (B1/B2/C1): ${score}/${max} — ${summary}`;
 }

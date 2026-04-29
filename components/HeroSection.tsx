@@ -385,27 +385,13 @@ export default function HeroSection() {
                 fontWeight: 400,
                 fontStyle: 'normal',
                 fontSize: 'var(--text-size)',
-                lineHeight: '100%',
+                lineHeight: '140%',
                 letterSpacing: '0',
                 textAlign: 'justify',
                 color: '#0E4486',
                 marginBottom: 'var(--spacing-text)'
               }}>
-                Ми розробили цей тест на базі тем, які охопимо в рамках навчання B2 & C1. Мета тесту — допомогти визначитися, який підрівень курсу буде корисним саме для вас
-              </p>
-
-              <p style={{ 
-                fontFamily: 'Craftwork Grotesk, sans-serif',
-                fontWeight: 400,
-                fontStyle: 'normal',
-                fontSize: 'var(--text-size)',
-                lineHeight: '100%',
-                letterSpacing: '0',
-                textAlign: 'justify',
-                color: '#0E4486',
-                marginBottom: 'var(--spacing-text)'
-              }}>
-                Якщо ви ніколи не проходили навчання В2 чи С1 рівня, то зверніть увагу  на самі завдання. Чи розумієте їхню суть? Якщо так, то у вас є потрібна В1 база — а все інше ми опануємо разом на курсі. Якщо ж завдання тесту зрозуміти важко, то ми будемо раді попрацювати з вами на наших майбутніх програмах для рівнів А1-В1
+                Ми розробили цей тест на базі тем, які охопимо в рамках навчання B1, B2 & C1. Мета тесту — допомогти визначитися, який підрівень курсу буде корисним саме для вас
               </p>
 
               <p style={{ 
@@ -413,27 +399,13 @@ export default function HeroSection() {
                 fontWeight: 600,
                 fontStyle: 'normal',
                 fontSize: 'var(--text-size)',
-                lineHeight: '100%',
+                lineHeight: '140%',
                 letterSpacing: '0',
                 textAlign: 'justify',
                 color: '#0E4486',
                 marginBottom: 'var(--spacing-text)'
               }}>
-                Не соромтеся обирати варіант "not sure" у тих запитаннях, у яких ви не впевнені. Для нас важливо, щоб навчання для вас було комфортним. Після проходження в будь-якому випадку висвітиться шкала набраних вами балів🧡
-              </p>
-
-              <p style={{ 
-                fontFamily: 'Craftwork Grotesk, sans-serif',
-                fontWeight: 500,
-                fontStyle: 'normal',
-                fontSize: 'var(--text-size)',
-                lineHeight: '100%',
-                letterSpacing: '0',
-                textAlign: 'justify',
-                color: '#0E4486',
-                marginBottom: 'var(--spacing-text)'
-              }}>
-                Орієнтовний час: ~20 хв, але можливо, ви впораєтеся швидше 😎
+                Не соромтеся обирати варіант «not sure» у тих запитаннях, у яких ви не впевнені. Для нас важливо, щоб навчання для вас було комфортним. Після проходження в будь-якому випадку висвітиться кількість набраних вами балів і рекомендований рівень курсу🫰🏼
               </p>
 
               <p style={{ 

@@ -18,6 +18,8 @@ interface SaveDataRequest {
   };
   answers: Record<number, string>; // questionId -> answer value
   score?: number; // Результат тесту
+  /** completed | failed_step_1 | … для CRM / аналітики */
+  outcome?: string;
   leadId?: number; // ID ліда з CRM
   utmParams?: {
     utm_source?: string;
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     const body: SaveDataRequest = await request.json();
-    const { formData, answers, score, leadId, utmParams } = body;
+    const { formData, answers, score, outcome, leadId, utmParams } = body;
 
     // Логування для дебагу
     console.log('[Sheets Save API] Request received:', {
@@ -127,20 +129,18 @@ export async function POST(request: Request) {
       crmData.email || '', // F: Email (тільки з CRM)
     ];
 
-    // Додаємо відповіді на 20 тестів (G-T: тест1-тест20, індекси 6-25)
-    for (let i = 1; i <= 20; i++) {
+    // Додаємо відповіді на 30 питань (G-AJ, індекси 6–35)
+    for (let i = 1; i <= 30; i++) {
       row.push(answers[i] || '');
     }
 
-    // Тепер маємо 26 елементів (A-F: 6, G-T: 20)
-    // AA - це 27-та колонка, індекс 26
-    // Додаємо результат безпосередньо в колонку AA (індекс 26)
+    // Результат у колонці AK (індекс 36), outcome — AL (37) за наявності
     row.push(score !== undefined ? score.toString() : '');
+    row.push(outcome || '');
 
-    // Додаємо рядок в кінець таблиці (A-AA)
     const appendResponse = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${actualSheetName}!A:AA`,
+      range: `${actualSheetName}!A:AL`,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: {
@@ -265,8 +265,7 @@ export async function POST(request: Request) {
               },
             });
           }
-          // Форматуємо колонку з результатом (колонка AA, індекс 26) як жирний текст
-          // AA - це 27-та колонка (A=0, B=1, ..., Z=25, AA=26)
+          // Колонка AK — бал (індекс 36)
           if (score !== undefined) {
             requests.push({
               repeatCell: {
@@ -274,8 +273,8 @@ export async function POST(request: Request) {
                   sheetId: firstSheet?.properties?.sheetId,
                   startRowIndex: rowNumber - 1,
                   endRowIndex: rowNumber,
-                  startColumnIndex: 26, // Колонка AA (27-та колонка, індекс 26)
-                  endColumnIndex: 27,
+                  startColumnIndex: 36,
+                  endColumnIndex: 37,
                 },
                 cell: {
                   userEnteredFormat: {
@@ -345,14 +344,22 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json',
           };
 
-          const resultText = getResultTextForCRM(score);
+          const resultText = getResultTextForCRM(score, outcome);
 
-          // Створюємо нового ліда у статусі "Новий" (ID 437) з джерелом 32
-          const crmPayload: any = {
+          const placementPipelineId = parseInt(
+            process.env.CRM_PLACEMENT_FORM_PIPELINE_ID || '7',
+            10
+          );
+          const placementStatusNewId = parseInt(
+            process.env.CRM_PLACEMENT_FORM_STATUS_NEW_ID || '437',
+            10
+          );
+
+          const crmPayload: Record<string, unknown> = {
             title: formData.name || 'Лід з тесту',
-            pipeline_id: 26, // ID воронки (з Python-скрипта: ID воронки 26)
-            status_id: 437, // статус "Новий" у воронці 26
-            source_id: 32, // ID джерела: 32 (з Python-скрипта)
+            pipeline_id: placementPipelineId,
+            status_id: placementStatusNewId,
+            source_id: 32,
             contact: {
               full_name: formData.name || '',
               phone: formData.phone || '',

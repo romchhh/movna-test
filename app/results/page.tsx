@@ -8,17 +8,25 @@ function ResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [score, setScore] = useState<number | null>(null);
+  const [outcome, setOutcome] = useState<string>('completed');
 
   useEffect(() => {
-    // Отримуємо score з URL параметрів або sessionStorage
     const urlScore = searchParams.get('score');
+    const urlOutcome = searchParams.get('outcome');
     const storedScore = sessionStorage.getItem('quizScore');
-    
+    const storedOutcome = sessionStorage.getItem('quizOutcome');
+
+    if (urlOutcome) {
+      setOutcome(decodeURIComponent(urlOutcome));
+      sessionStorage.setItem('quizOutcome', decodeURIComponent(urlOutcome));
+    } else if (storedOutcome) {
+      setOutcome(storedOutcome);
+    }
+
     if (urlScore) {
       const parsedScore = parseInt(urlScore, 10);
       if (!isNaN(parsedScore)) {
         setScore(parsedScore);
-        // Зберігаємо в sessionStorage для безпеки
         sessionStorage.setItem('quizScore', urlScore);
       } else {
         router.push('/');
@@ -31,10 +39,21 @@ function ResultsContent() {
         router.push('/');
       }
     } else {
-      // Якщо немає score, перенаправляємо на головну
       router.push('/');
     }
   }, [searchParams, router]);
+
+  useEffect(() => {
+    if (score === null) return;
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReduced) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [score]);
 
   if (score === null) {
     return (
@@ -51,6 +70,23 @@ function ResultsContent() {
       background: '#C7D2DF',
       padding: '16px 0'
     }}>
+      <style jsx global>{`
+        @keyframes resultsPageIn {
+          from {
+            opacity: 0;
+            transform: translateY(14px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .results-page-enter {
+            animation: none !important;
+          }
+        }
+      `}</style>
       <style jsx>{`
         .results-page-container {
           --card-width: 542px;
@@ -59,6 +95,10 @@ function ResultsContent() {
           max-width: var(--card-width);
           margin: 0 auto;
           padding: 0 16px;
+        }
+
+        .results-page-enter {
+          animation: resultsPageIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         @media (max-width: 768px) {
@@ -75,8 +115,8 @@ function ResultsContent() {
         }
       `}</style>
       
-      <div className="results-page-container">
-        <ResultsSection score={score} totalQuestions={20} />
+      <div className="results-page-container results-page-enter">
+        <ResultsSection score={score} totalQuestions={30} outcome={outcome} />
       </div>
     </div>
   );

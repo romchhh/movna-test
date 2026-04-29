@@ -9,6 +9,8 @@ const STATUS_COMPLETED = 449;
 interface CompleteTestRequest {
   lead_id: number;
   test_result: number;
+  /** Напр. completed | failed_step_1 — для тексту в полі результату */
+  outcome?: string;
 }
 
 export async function POST(request: Request) {
@@ -24,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     const body: CompleteTestRequest = await request.json();
-    const { lead_id, test_result } = body;
+    const { lead_id, test_result, outcome } = body;
 
     if (!lead_id || test_result === undefined) {
       return NextResponse.json(
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
     };
 
     // Крок 1: Оновлюємо результат тестування (текстовий формат)
-    const resultText = getResultTextForCRM(test_result);
+    const resultText = getResultTextForCRM(test_result, outcome);
     const updateResultResponse = await fetch(
       `${CRM_BASE_URL}/pipelines/cards/${lead_id}`,
       {

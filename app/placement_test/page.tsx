@@ -1,8 +1,6 @@
 'use client';
 
 import { Suspense } from 'react';
-import HeroSection from '@/components/HeroSection';
-import QuizSection from '@/components/QuizSection';
 import PlacementTestContent from './PlacementTestContent';
 
 export default function PlacementTestPage() {

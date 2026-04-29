@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Level Up: Welcome Placement Test",
-  description: "Placement test for Level Up B2 & C1 courses",
+  description: "Placement test for Level Up B1 / B2 / C1 courses",
   icons: {
     icon: '/logo.svg',
   },
