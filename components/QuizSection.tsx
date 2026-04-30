@@ -496,11 +496,6 @@ export default function QuizSection({ isFormValid = true, formData, leadId }: Qu
             ? runningTotalScore
             : confirmedScore}
         </span>
-        {!showAnswerFeedback || stepOutcome === 'pass' ? (
-          <span style={{ fontSize: '12px', opacity: 0.9 }}>
-            Етап {currentStepIndex + 1} / {placementSteps.length}
-          </span>
-        ) : null}
       </div>
 
       <style jsx global>{`
