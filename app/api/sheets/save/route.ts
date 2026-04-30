@@ -323,8 +323,9 @@ export async function POST(request: Request) {
     }
 
     // Якщо це новий користувач (немає leadId), є форма та результат тесту,
-    // створюємо нового ліда в KeyCRM у статусі "Новий" (ID 437)
-    const hasValidFormData = formData && (formData.name || formData.phone);
+    // створюємо нового ліда в KeyCRM.
+    const hasValidFormData =
+      !!formData && !!(formData.name?.trim() || formData.phone?.trim());
     if (!leadId && hasValidFormData && typeof score === 'number') {
       try {
         // Лог для дебагу створення ліда в CRM
@@ -347,7 +348,7 @@ export async function POST(request: Request) {
           const resultText = getResultTextForCRM(score, outcome);
 
           const placementPipelineId = parseInt(
-            process.env.CRM_PLACEMENT_FORM_PIPELINE_ID || '7',
+            process.env.CRM_PLACEMENT_FORM_PIPELINE_ID || '26',
             10
           );
           const placementStatusNewId = parseInt(
@@ -355,47 +356,69 @@ export async function POST(request: Request) {
             10
           );
 
-          const crmPayload: Record<string, unknown> = {
+          const basePayload: Record<string, unknown> = {
             title: formData.name || 'Лід з тесту',
-            pipeline_id: placementPipelineId,
-            status_id: placementStatusNewId,
             source_id: 32,
             contact: {
               full_name: formData.name || '',
               phone: formData.phone || '',
-              // за бажанням можна зберігати socials
             },
             custom_fields: [
               {
-                uuid: 'LD_1026', // Результат тестування
+                uuid: 'LD_1026',
                 value: resultText,
               },
             ],
           };
 
-          // Додаємо UTM безпосередньо на верхньому рівні (не як вкладений об'єкт)
+          // Додаємо UTM безпосередньо на верхньому рівні
           if (utmParams) {
-            if (utmParams.utm_source) crmPayload.utm_source = utmParams.utm_source;
-            if (utmParams.utm_medium) crmPayload.utm_medium = utmParams.utm_medium;
-            if (utmParams.utm_campaign) crmPayload.utm_campaign = utmParams.utm_campaign;
-            if (utmParams.utm_content) crmPayload.utm_content = utmParams.utm_content;
-            if (utmParams.utm_term) crmPayload.utm_term = utmParams.utm_term;
+            if (utmParams.utm_source) basePayload.utm_source = utmParams.utm_source;
+            if (utmParams.utm_medium) basePayload.utm_medium = utmParams.utm_medium;
+            if (utmParams.utm_campaign) basePayload.utm_campaign = utmParams.utm_campaign;
+            if (utmParams.utm_content) basePayload.utm_content = utmParams.utm_content;
+            if (utmParams.utm_term) basePayload.utm_term = utmParams.utm_term;
           }
 
-          console.log('[CRM] Payload being sent to KeyCRM:', JSON.stringify(crmPayload, null, 2));
+          const payloadAttempts: Record<string, unknown>[] = [
+            {
+              ...basePayload,
+              pipeline_id: placementPipelineId,
+              status_id: placementStatusNewId,
+            },
+          ];
 
-          const crmResponse = await fetch('https://openapi.keycrm.app/v1/pipelines/cards', {
-            method: 'POST',
-            headers: crmHeaders,
-            body: JSON.stringify(crmPayload),
-          });
+          let leadCreated = false;
+          for (let i = 0; i < payloadAttempts.length; i++) {
+            const attemptPayload = payloadAttempts[i];
+            console.log(
+              `[CRM] Create attempt ${i + 1}/${payloadAttempts.length}:`,
+              JSON.stringify(attemptPayload, null, 2)
+            );
 
-          if (!crmResponse.ok) {
+            const crmResponse = await fetch('https://openapi.keycrm.app/v1/pipelines/cards', {
+              method: 'POST',
+              headers: crmHeaders,
+              body: JSON.stringify(attemptPayload),
+            });
+
+            if (crmResponse.ok) {
+              const data = await crmResponse.json().catch(() => null);
+              console.log('[CRM] Lead created successfully from test form', data);
+              leadCreated = true;
+              break;
+            }
+
             const errorText = await crmResponse.text().catch(() => '');
-            console.error('[CRM] Lead create failed:', crmResponse.status, errorText);
-          } else {
-            const data = await crmResponse.json().catch(() => null);
-            console.log('[CRM] Lead created successfully from test form', data);
+            console.error(
+              `[CRM] Lead create attempt ${i + 1} failed:`,
+              crmResponse.status,
+              errorText
+            );
+          }
+
+          if (!leadCreated) {
+            console.error('[CRM] All lead create attempts failed');
           }
         } else {
           console.error('[CRM] CRM_API_KEY is not configured on server, lead not created');
