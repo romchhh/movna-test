@@ -7,9 +7,9 @@ import rehypeRaw from 'rehype-raw';
 import {
   placementSteps,
   correctAnswers,
-  failMessages,
-  completedMessage,
   PLACEMENT_TOTAL_QUESTIONS,
+  recommendedLevelFromPlacement,
+  recommendationBodyFromPlacement,
 } from '@/lib/placementQuizData';
 
 interface ResultsSectionProps {
@@ -32,34 +32,17 @@ placementSteps.forEach((st) => {
 function getResultCategory(score: number, outcome: string) {
   const max = PLACEMENT_TOTAL_QUESTIONS;
   const range = `${score} / ${max}`;
-  const o = outcome || 'completed';
-
-  if (o === 'completed') {
-    return {
-      range,
-      level: 'Level Up → C1',
-      text: completedMessage.body,
-    };
-  }
-  if (o.startsWith('failed_step_')) {
-    const n = parseInt(o.replace('failed_step_', ''), 10) as 1 | 2 | 3 | 4 | 5;
-    const fm = failMessages[n] || failMessages[1];
-    const levelHint =
-      n === 1
+  const level = recommendedLevelFromPlacement(score, outcome);
+  const levelLabel =
+    level === 'C1'
+      ? 'Level Up → C1'
+      : level === 'A1-A2'
         ? 'A1–A2'
-        : n === 2 || n === 3
-          ? 'B1'
-          : 'B2';
-    return {
-      range,
-      level: `рекомендація: ${levelHint}`,
-      text: fm.body,
-    };
-  }
+        : `рекомендація: ${level}`;
   return {
     range,
-    level: 'Level Up',
-    text: completedMessage.body,
+    level: levelLabel,
+    text: recommendationBodyFromPlacement(score, outcome),
   };
 }
 

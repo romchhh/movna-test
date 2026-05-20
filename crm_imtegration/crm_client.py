@@ -126,26 +126,20 @@ class CRMClient:
         
         return self.update_lead_field(lead_id, self.config.test_link_uuid, new_link)
     
-    def _get_result_text(self, score: float) -> str:
-        """Отримує текстовий результат тесту на основі балу"""
+    def _get_result_text(self, score: float, outcome: str = "completed") -> str:
+        """Текст результату placement (30 питань): early-exit за кроком, C1 лише від 26 балів."""
         score_int = int(score)
-        if score_int >= 0 and score_int <= 3:
-            range_text = "0-3 бали"
-            level = "B2.1 (початковий рівень)"
-        elif score_int >= 4 and score_int <= 8:
-            range_text = "4-8 балів"
-            level = "B2.1 (середній рівень)"
-        elif score_int >= 9 and score_int <= 12:
-            range_text = "9-12 балів"
-            level = "B2.2"
-        elif score_int >= 13 and score_int <= 17:
-            range_text = "13-17 балів"
-            level = "B2 (просунутий) / C1 (початковий)"
+        if outcome == "failed_step_1":
+            summary = "рекомендація: майбутні програми A1-A2"
+        elif outcome in ("failed_step_2", "failed_step_3"):
+            summary = "рекомендація: Level Up B1"
+        elif outcome in ("failed_step_4", "failed_step_5"):
+            summary = "рекомендація: Level Up B2"
+        elif score_int >= 26:
+            summary = "рекомендація: Level Up C1"
         else:
-            range_text = "18-20 балів"
-            level = "C1"
-        
-        return f"Результат тестування: {score_int} - {range_text} — {level}"
+            summary = "рекомендація: Level Up B2"
+        return f"Placement Level Up (B1/B2/C1): {score_int}/30 — {summary}"
     
     def complete_test(self, lead_id: int, test_result: float) -> Dict[str, Any]:
         result = {

@@ -472,6 +472,44 @@ export const completedMessage = {
   body: 'У вас дуже впевнений рівень B2 — ви добре орієнтуєтеся в граматиці, розумієте складні конструкції та орієнтуєтеся в лексиці в різних ситуаціях. Саме час зробити наступний крок і перейти на рівень C1 разом з нами на Level Up. Це допоможе вам вдосконалити мовну точність, збагатити словниковий запас і досягти ще більшої впевненості у спілкуванні англійською 🧡',
 };
 
+/** Після повного проходження: 26+ → C1, інакше → B2 */
+export const PLACEMENT_SCORE_C1_MIN = 26;
+
+export type PlacementRecommendedLevel = 'A1-A2' | 'B1' | 'B2' | 'C1';
+
+export function recommendedLevelFromPlacement(
+  score: number,
+  outcome?: PlacementOutcome | string
+): PlacementRecommendedLevel {
+  const o = outcome || 'completed';
+  if (o === 'failed_step_1') return 'A1-A2';
+  if (o === 'failed_step_2' || o === 'failed_step_3') return 'B1';
+  if (o === 'failed_step_4' || o === 'failed_step_5') return 'B2';
+  return score >= PLACEMENT_SCORE_C1_MIN ? 'C1' : 'B2';
+}
+
+export function recommendationBodyFromPlacement(
+  score: number,
+  outcome?: PlacementOutcome | string
+): string {
+  const level = recommendedLevelFromPlacement(score, outcome);
+  if (level === 'A1-A2') return failMessages[1].body;
+  if (level === 'B1') return failMessages[2].body;
+  if (level === 'B2') return failMessages[4].body;
+  return completedMessage.body;
+}
+
+export function crmSummaryFromPlacement(
+  score: number,
+  outcome?: PlacementOutcome | string
+): string {
+  const level = recommendedLevelFromPlacement(score, outcome);
+  if (level === 'A1-A2') return 'рекомендація: майбутні програми A1-A2';
+  if (level === 'B1') return 'рекомендація: Level Up B1';
+  if (level === 'B2') return 'рекомендація: Level Up B2';
+  return 'рекомендація: Level Up C1';
+}
+
 export function outcomeForFailedStep(stepNumber: 1 | 2 | 3 | 4 | 5): PlacementOutcome {
   return `failed_step_${stepNumber}` as PlacementOutcome;
 }
