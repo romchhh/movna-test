@@ -16,10 +16,10 @@ class CRMDaemon:
         leads = self.client.get_leads_by_status(self.config.status_in_progress)
         
         if not leads:
-            print("ℹ️  Лідів зі статусом 295 не знайдено\n")
+            print(f"ℹ️  Лідів зі статусом {self.config.status_in_progress} не знайдено\n")
             return {"processed": 0, "updated": 0}
         
-        print(f"📊 Знайдено {len(leads)} лідів зі статусом 295\n")
+        print(f"📊 Знайдено {len(leads)} лідів зі статусом {self.config.status_in_progress}\n")
         
         processed_count = 0
         updated_count = 0

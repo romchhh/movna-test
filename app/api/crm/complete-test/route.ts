@@ -4,7 +4,8 @@ import { getResultTextForCRM } from '@/utils/getResultText';
 const CRM_API_KEY = process.env.CRM_API_KEY;
 const CRM_BASE_URL = 'https://openapi.keycrm.app/v1';
 const TEST_RESULT_UUID = 'LD_1026';
-const STATUS_COMPLETED = 449;
+/** Level Up 8 — статус "Тест пройдено" */
+const STATUS_COMPLETED = 537;
 
 interface CompleteTestRequest {
   lead_id: number;
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Крок 2: Змінюємо статус на 417
+    // Крок 2: Змінюємо статус на "Тест пройдено" (537 у воронці Level Up 8)
     const updateStatusResponse = await fetch(
       `${CRM_BASE_URL}/pipelines/cards/${lead_id}`,
       {

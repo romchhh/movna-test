@@ -85,7 +85,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ### Daemon Script
 
-The daemon script (`crm_imtegration/main.py`) automatically checks for leads with status 295 (in progress) every minute and generates test links for leads where the `LD_1024` field is empty.
+The daemon script (`crm_imtegration/main.py`) automatically checks for leads with status 536 ("Проходження тесту" in Level Up 8) every minute and generates test links for leads where the `LD_1024` field is empty.
 
 **To run the daemon:**
 ```bash
@@ -109,7 +109,7 @@ CRM_CHECK_INTERVAL=60
 ```
 
 The daemon will:
-- Check all leads with status 295 every 60 seconds (configurable)
+- Check all leads with status 536 ("Проходження тесту", Level Up 8 / pipeline 29) every 60 seconds (configurable)
 - Generate test links (`/placement_test?id={lead_id}`) for leads with empty `LD_1024` field
 - Update the CRM with the generated link
 
@@ -117,7 +117,7 @@ The daemon will:
 
 When a user completes the test via a link with `?id={lead_id}`, the system automatically:
 1. Saves the test result to field `LD_1026` in CRM
-2. Changes the lead status to 417 (Completed)
+2. Changes the lead status to 537 ("Тест пройдено", Level Up 8)
 
 **API Endpoint:**
 - **POST `/api/crm/complete-test`** - Completes test in CRM:

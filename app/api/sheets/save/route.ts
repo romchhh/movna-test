@@ -347,12 +347,13 @@ export async function POST(request: Request) {
 
           const resultText = getResultTextForCRM(score, outcome);
 
+          // Level Up 8: pipeline 29, статус "Новий" = 526
           const placementPipelineId = parseInt(
-            process.env.CRM_PLACEMENT_FORM_PIPELINE_ID || '26',
+            process.env.CRM_PLACEMENT_FORM_PIPELINE_ID || '29',
             10
           );
           const placementStatusNewId = parseInt(
-            process.env.CRM_PLACEMENT_FORM_STATUS_NEW_ID || '437',
+            process.env.CRM_PLACEMENT_FORM_STATUS_NEW_ID || '526',
             10
           );
 
